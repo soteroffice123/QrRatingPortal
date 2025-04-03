@@ -37,6 +37,7 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // No need to setup auth anymore
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {

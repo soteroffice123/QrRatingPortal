@@ -1,18 +1,13 @@
-import { useAuth } from "@/hooks/use-auth";
 import { SidebarNav } from "@/components/sidebar-nav";
-import { useLocation } from "wouter";
 
 interface AdminLayoutProps {
   children: React.ReactNode;
 }
 
 export default function AdminLayout({ children }: AdminLayoutProps) {
-  const { user, logoutMutation } = useAuth();
-  const [location, setLocation] = useLocation();
-  
-  const handleLogout = async () => {
-    await logoutMutation.mutateAsync();
-    setLocation("/auth");
+  // Since we no longer have login functionality, provide an empty function
+  const handleLogout = () => {
+    // This function now does nothing
   };
 
   return (

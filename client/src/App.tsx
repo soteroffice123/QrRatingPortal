@@ -5,17 +5,16 @@ import { Toaster } from "@/components/ui/toaster";
 import NotFound from "@/pages/not-found";
 import RatingPage from "@/pages/rating-page";
 import AdminDashboard from "@/pages/admin/index";
-import AuthPage from "@/pages/auth-page";
-import { ProtectedRoute } from "./lib/protected-route";
-import { AuthProvider } from "@/hooks/use-auth";
+import { Redirect } from "wouter";
 
 function Router() {
   return (
     <Switch>
       <Route path="/rating/:qrCodeId" component={RatingPage} />
-      <ProtectedRoute path="/admin" component={AdminDashboard} />
-      <Route path="/auth" component={AuthPage} />
-      <Route path="/" component={AuthPage} />
+      <Route path="/admin" component={AdminDashboard} />
+      <Route path="/">
+        {() => <Redirect to="/admin" />}
+      </Route>
       <Route component={NotFound} />
     </Switch>
   );
@@ -24,10 +23,8 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <Router />
-        <Toaster />
-      </AuthProvider>
+      <Router />
+      <Toaster />
     </QueryClientProvider>
   );
 }

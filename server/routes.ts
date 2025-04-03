@@ -1,36 +1,42 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupAuth } from "./auth";
 import { z } from "zod";
 import { insertBusinessSchema, insertQrCodeSchema, insertLinkSchema, insertAnalyticSchema } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Set up authentication routes
-  setupAuth(app);
+  // For demo purposes, we'll create a default admin user
+  const defaultUserId = 1;
+  const defaultUser = await storage.getUser(defaultUserId);
+  
+  if (!defaultUser) {
+    // Create a default user if none exists
+    await storage.createUser({
+      username: "admin",
+      password: "password", // In a real app, this would be hashed
+    });
+  }
 
   // Business API routes
   app.get("/api/business", async (req, res) => {
-    if (!req.isAuthenticated()) return res.sendStatus(401);
+    // Find the first business or the one belonging to the default user
+    const businesses = await storage.getBusinessByUserId(defaultUserId);
     
-    const business = await storage.getBusinessByUserId(req.user.id);
-    if (!business) {
+    if (!businesses) {
       return res.status(404).send("Business not found");
     }
     
-    res.json(business);
+    res.json(businesses);
   });
 
   app.post("/api/business", async (req, res) => {
-    if (!req.isAuthenticated()) return res.sendStatus(401);
-    
     try {
-      const existingBusiness = await storage.getBusinessByUserId(req.user.id);
+      const existingBusiness = await storage.getBusinessByUserId(defaultUserId);
       
       if (existingBusiness) {
         const validatedData = insertBusinessSchema.parse({
           ...req.body,
-          userId: req.user.id,
+          userId: defaultUserId,
         });
         
         const updatedBusiness = await storage.updateBusiness(existingBusiness.id, validatedData);
@@ -38,7 +44,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         const validatedData = insertBusinessSchema.parse({
           ...req.body,
-          userId: req.user.id,
+          userId: defaultUserId,
         });
         
         const business = await storage.createBusiness(validatedData);
@@ -54,9 +60,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // QR Code API routes
   app.get("/api/qrcode", async (req, res) => {
-    if (!req.isAuthenticated()) return res.sendStatus(401);
-    
-    const business = await storage.getBusinessByUserId(req.user.id);
+    const business = await storage.getBusinessByUserId(defaultUserId);
     if (!business) {
       return res.status(404).send("Business not found");
     }
@@ -70,10 +74,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.post("/api/qrcode", async (req, res) => {
-    if (!req.isAuthenticated()) return res.sendStatus(401);
-    
     try {
-      const business = await storage.getBusinessByUserId(req.user.id);
+      const business = await storage.getBusinessByUserId(defaultUserId);
       if (!business) {
         return res.status(404).send("Business not found");
       }
@@ -107,9 +109,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Links API routes
   app.get("/api/links", async (req, res) => {
-    if (!req.isAuthenticated()) return res.sendStatus(401);
-    
-    const business = await storage.getBusinessByUserId(req.user.id);
+    const business = await storage.getBusinessByUserId(defaultUserId);
     if (!business) {
       return res.status(404).send("Business not found");
     }
@@ -123,10 +123,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.post("/api/links", async (req, res) => {
-    if (!req.isAuthenticated()) return res.sendStatus(401);
-    
     try {
-      const business = await storage.getBusinessByUserId(req.user.id);
+      const business = await storage.getBusinessByUserId(defaultUserId);
       if (!business) {
         return res.status(404).send("Business not found");
       }
@@ -160,9 +158,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Analytics API routes
   app.get("/api/analytics", async (req, res) => {
-    if (!req.isAuthenticated()) return res.sendStatus(401);
-    
-    const business = await storage.getBusinessByUserId(req.user.id);
+    const business = await storage.getBusinessByUserId(defaultUserId);
     if (!business) {
       return res.status(404).send("Business not found");
     }
