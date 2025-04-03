@@ -5,15 +5,54 @@ import { z } from "zod";
 import { insertBusinessSchema, insertQrCodeSchema, insertLinkSchema, insertAnalyticSchema } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // For demo purposes, we'll create a default admin user
+  // For demo purposes, we'll create a default admin user and sample data
   const defaultUserId = 1;
-  const defaultUser = await storage.getUser(defaultUserId);
+  let defaultUser = await storage.getUser(defaultUserId);
   
+  // Create default user if it doesn't exist
   if (!defaultUser) {
-    // Create a default user if none exists
-    await storage.createUser({
+    defaultUser = await storage.createUser({
       username: "admin",
       password: "password", // In a real app, this would be hashed
+    });
+  }
+
+  // Create default business if it doesn't exist
+  let defaultBusiness = await storage.getBusinessByUserId(defaultUserId);
+  if (!defaultBusiness) {
+    defaultBusiness = await storage.createBusiness({
+      userId: defaultUserId,
+      name: "Sample Business",
+      logoUrl: "https://placehold.co/150x150?text=Logo",
+      description: "A sample business for QR code feedback",
+      address: "123 Main Street, City, Country",
+      phone: "+1 (555) 123-4567",
+      website: "https://example.com"
+    });
+  }
+
+  // Create default QR code if it doesn't exist
+  const existingQrCode = await storage.getQrCodeByBusinessId(defaultBusiness.id);
+  if (!existingQrCode) {
+    await storage.createQrCode({
+      businessId: defaultBusiness.id,
+      size: 300,
+      fgColor: "#000000",
+      bgColor: "#FFFFFF",
+      errorCorrection: "M",
+      logoEnabled: true
+    });
+  }
+
+  // Create default links if they don't exist
+  const existingLinks = await storage.getLinkByBusinessId(defaultBusiness.id);
+  if (!existingLinks) {
+    await storage.createLink({
+      businessId: defaultBusiness.id,
+      googleReviewUrl: "https://g.page/r/example-review-link",
+      prefillRating: true,
+      feedbackFormUrl: "https://forms.google.com/example-form",
+      passRating: true
     });
   }
 
