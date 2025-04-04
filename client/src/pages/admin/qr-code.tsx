@@ -14,6 +14,7 @@ import { Loader2, Download, Printer } from "lucide-react";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { QRCodeSVG } from "qrcode.react";
 import { generateQrUrl } from "@/lib/qr-utils";
+import * as React from "react";
 import { useRef } from "react";
 
 const formSchema = z.object({

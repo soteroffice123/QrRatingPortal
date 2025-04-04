@@ -12,6 +12,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Loader2 } from "lucide-react";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import * as React from "react";
 
 const formSchema = insertBusinessSchema.omit({ userId: true });
 type FormValues = z.infer<typeof formSchema>;
@@ -40,12 +41,12 @@ export default function BusinessInfo() {
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: business?.name || "",
-      description: business?.description || "",
-      address: business?.address || "",
-      phone: business?.phone || "",
-      website: business?.website || "",
-      logoUrl: business?.logoUrl || "",
+      name: business?.name ?? "",
+      description: business?.description ?? "",
+      address: business?.address ?? "",
+      phone: business?.phone ?? "",
+      website: business?.website ?? "",
+      logoUrl: business?.logoUrl ?? "",
     },
   });
 
@@ -53,12 +54,12 @@ export default function BusinessInfo() {
   React.useEffect(() => {
     if (business) {
       form.reset({
-        name: business.name || "",
-        description: business.description || "",
-        address: business.address || "",
-        phone: business.phone || "",
-        website: business.website || "",
-        logoUrl: business.logoUrl || "",
+        name: business.name ?? "",
+        description: business.description ?? "",
+        address: business.address ?? "",
+        phone: business.phone ?? "",
+        website: business.website ?? "",
+        logoUrl: business.logoUrl ?? "",
       });
     }
   }, [business, form]);
