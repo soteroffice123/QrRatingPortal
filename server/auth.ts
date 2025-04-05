@@ -59,10 +59,17 @@ export function setupAuth(app: Express) {
         }
         
         if (!user || !(await comparePasswords(password, user.password))) {
-          return done(null, false);
-        } else {
-          return done(null, user);
+          return done(null, false, { message: "Invalid credentials" });
+        } 
+        
+        // Check if the account is active
+        if (!user.isActive) {
+          return done(null, false, { 
+            message: "Account is not active. Please use your activation code or contact admin." 
+          });
         }
+        
+        return done(null, user);
       } catch (err) {
         return done(err);
       }

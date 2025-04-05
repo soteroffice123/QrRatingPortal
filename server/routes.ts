@@ -18,6 +18,19 @@ function isAdmin(req: Request, res: Response, next: NextFunction) {
   next();
 }
 
+// Middleware to check if user is active
+function isActive(req: Request, res: Response, next: NextFunction) {
+  if (!req.isAuthenticated()) {
+    return res.status(401).send("Unauthorized - Login required");
+  }
+  
+  if (!req.user.isActive) {
+    return res.status(403).send("Your account has been deactivated");
+  }
+  
+  next();
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Set up authentication
   setupAuth(app);
@@ -52,6 +65,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
+      // Generate activation code for new user
+      const activationCode = await storage.generateActivationCode();
+      userData.activationCode = activationCode;
+      
       const user = await storage.createUser(userData);
       res.status(201).json(user);
     } catch (error) {
@@ -60,6 +77,89 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       console.error("Error creating user:", error);
       res.status(500).send("Failed to create user");
+    }
+  });
+  
+  // Admin only - Update user (activate/deactivate)
+  app.patch("/api/users/:id", isAdmin, async (req, res) => {
+    try {
+      const userId = parseInt(req.params.id);
+      if (isNaN(userId)) {
+        return res.status(400).send("Invalid user ID");
+      }
+      
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).send("User not found");
+      }
+      
+      // Only allow updating isActive status
+      const { isActive } = req.body;
+      if (typeof isActive !== 'boolean') {
+        return res.status(400).send("isActive must be a boolean value");
+      }
+      
+      const updatedUser = await storage.updateUser(userId, { isActive });
+      res.json(updatedUser);
+    } catch (error) {
+      console.error("Error updating user:", error);
+      res.status(500).send("Failed to update user");
+    }
+  });
+  
+  // Admin only - Reset user activation code
+  app.post("/api/users/:id/reset-code", isAdmin, async (req, res) => {
+    try {
+      const userId = parseInt(req.params.id);
+      if (isNaN(userId)) {
+        return res.status(400).send("Invalid user ID");
+      }
+      
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).send("User not found");
+      }
+      
+      const activationCode = await storage.generateActivationCode();
+      const updatedUser = await storage.updateUser(userId, { 
+        activationCode,
+        isActive: false // Reset activation status
+      });
+      
+      if (!updatedUser) {
+        return res.status(500).send("Failed to update user");
+      }
+      
+      res.json({ 
+        userId: updatedUser.id,
+        username: updatedUser.username,
+        email: updatedUser.email,
+        activationCode
+      });
+    } catch (error) {
+      console.error("Error resetting activation code:", error);
+      res.status(500).send("Failed to reset activation code");
+    }
+  });
+  
+  // Public endpoint for activating a user account
+  app.post("/api/activate", async (req, res) => {
+    try {
+      const { email, activationCode } = req.body;
+      
+      if (!email || !activationCode) {
+        return res.status(400).send("Email and activation code are required");
+      }
+      
+      const user = await storage.activateUser(email, activationCode);
+      if (!user) {
+        return res.status(400).send("Invalid email or activation code");
+      }
+      
+      res.json({ success: true, message: "Account activated successfully" });
+    } catch (error) {
+      console.error("Error activating user:", error);
+      res.status(500).send("Failed to activate user");
     }
   });
   

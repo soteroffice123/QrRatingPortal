@@ -4,16 +4,20 @@ import BusinessInfo from "./business-info";
 import QrCode from "./qr-code";
 import Links from "./links";
 import Analytics from "./analytics";
+import Users from "./users";
 import { SidebarNav, TabName } from "@/components/sidebar-nav";
 import { AnimatePresence, motion } from "framer-motion";
+import { useAuth } from "@/hooks/use-auth";
 
 export default function AdminDashboard() {
+  const { logoutMutation, user } = useAuth();
   const [activeTab, setActiveTab] = useState<TabName>("dashboard");
   
-  // No logout functionality yet, so provide an empty function
   const handleLogout = () => {
-    // This function now does nothing
+    logoutMutation.mutate();
   };
+  
+  const isAdmin = user?.isAdmin || false;
 
   const renderTabContent = () => {
     return (
@@ -38,6 +42,8 @@ export default function AdminDashboard() {
                 return <Links />;
               case "analytics":
                 return <Analytics />;
+              case "users":
+                return isAdmin ? <Users /> : <Dashboard />;
               default:
                 return <Dashboard />;
             }
@@ -52,7 +58,8 @@ export default function AdminDashboard() {
       <SidebarNav 
         activeTab={activeTab} 
         setActiveTab={setActiveTab} 
-        onLogout={handleLogout} 
+        onLogout={handleLogout}
+        isAdmin={isAdmin}
       />
       
       <main className="flex-1 p-4 md:p-6 overflow-auto">

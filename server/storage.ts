@@ -11,6 +11,9 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  updateUser(id: number, data: Partial<InsertUser>): Promise<User | undefined>;
+  generateActivationCode(): Promise<string>;
+  activateUser(email: string, activationCode: string): Promise<User | undefined>;
   getAllUsers(): Promise<User[]>;
   
   // Business operations
@@ -107,10 +110,40 @@ export class MemStorage implements IStorage {
     const user: User = { 
       ...insertUser, 
       id,
-      isAdmin: insertUser.isAdmin || false
+      isAdmin: insertUser.isAdmin || false,
+      isActive: insertUser.isActive ?? true,
+      activationCode: insertUser.activationCode ?? null
     };
     this.usersData.set(id, user);
     return user;
+  }
+  
+  async updateUser(id: number, data: Partial<InsertUser>): Promise<User | undefined> {
+    const user = await this.getUser(id);
+    if (!user) return undefined;
+    
+    const updatedUser: User = { ...user, ...data };
+    this.usersData.set(id, updatedUser);
+    return updatedUser;
+  }
+  
+  async generateActivationCode(): Promise<string> {
+    // Generate a random 8-character alphanumeric code
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let result = '';
+    for (let i = 0; i < 8; i++) {
+      result += characters.charAt(Math.floor(Math.random() * characters.length));
+    }
+    return result;
+  }
+  
+  async activateUser(email: string, activationCode: string): Promise<User | undefined> {
+    const user = await this.getUserByEmail(email);
+    if (!user || user.activationCode !== activationCode) return undefined;
+    
+    const updatedUser: User = { ...user, isActive: true, activationCode: null };
+    this.usersData.set(user.id, updatedUser);
+    return updatedUser;
   }
 
   // Business operations

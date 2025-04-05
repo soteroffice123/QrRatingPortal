@@ -6,18 +6,25 @@ import NotFound from "@/pages/not-found";
 import RatingPage from "@/pages/rating-page";
 import AdminDashboard from "@/pages/admin/index";
 import AuthPage from "@/pages/auth-page";
+import ActivatePage from "@/pages/activate-page";
 import { Redirect } from "wouter";
-import { AuthProvider } from "@/hooks/use-auth";
+import { AuthProvider, useAuth } from "@/hooks/use-auth";
 import { ProtectedRoute } from "@/lib/protected-route";
 
 function Router() {
+  const { user, isLoading } = useAuth();
+
+  // If still loading authentication status, return nothing (to avoid flashing redirect)
+  if (isLoading) return null;
+
   return (
     <Switch>
       <Route path="/rating/:qrCodeId" component={RatingPage} />
-      <Route path="/admin" component={AdminDashboard} />
+      <ProtectedRoute path="/admin" component={AdminDashboard} />
       <Route path="/auth" component={AuthPage} />
+      <Route path="/activate" component={ActivatePage} />
       <Route path="/">
-        {() => <Redirect to="/admin" />}
+        {() => <Redirect to={user ? "/admin" : "/auth"} />}
       </Route>
       <Route component={NotFound} />
     </Switch>

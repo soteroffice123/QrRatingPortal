@@ -3,19 +3,30 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StarRating } from "@/components/star-rating";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { apiRequest } from "@/lib/queryClient";
+import { Business, QrCode } from "@shared/schema";
 
 export default function RatingPage() {
   const { qrCodeId } = useParams();
   const [, setLocation] = useLocation();
   const [rating, setRating] = useState<number | null>(null);
 
-  const { data, isLoading, error } = useQuery({
+  interface RatingPageData {
+    business: Business;
+    qrCode: QrCode;
+  }
+
+  const { data, isLoading, error } = useQuery<RatingPageData>({
     queryKey: [`/api/rating/${qrCodeId}`],
   });
 
-  const submitRatingMutation = useMutation({
+  interface RatingRedirectData {
+    redirectUrl: string;
+    prefillRating?: boolean;
+  }
+
+  const submitRatingMutation = useMutation<RatingRedirectData, Error, number>({
     mutationFn: async (rating: number) => {
       const res = await apiRequest("POST", `/api/rating/${qrCodeId}`, { rating });
       return await res.json();

@@ -7,19 +7,21 @@ import {
   Link, 
   ChartBar, 
   LogOut,
-  Menu 
+  Menu,
+  Users
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-export type TabName = "dashboard" | "business" | "qrcode" | "links" | "analytics";
+export type TabName = "dashboard" | "business" | "qrcode" | "links" | "analytics" | "users";
 
 interface SidebarNavProps {
   onLogout: () => void;
   activeTab: TabName;
   setActiveTab: (tab: TabName) => void;
+  isAdmin?: boolean;
 }
 
-export function SidebarNav({ onLogout, activeTab, setActiveTab }: SidebarNavProps) {
+export function SidebarNav({ onLogout, activeTab, setActiveTab, isAdmin = false }: SidebarNavProps) {
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   
   const tabs = [
@@ -49,6 +51,15 @@ export function SidebarNav({ onLogout, activeTab, setActiveTab }: SidebarNavProp
       icon: <ChartBar className="h-5 w-5 mr-2" />,
     },
   ];
+  
+  // Add Users tab for admins
+  if (isAdmin) {
+    tabs.push({
+      name: "Users",
+      id: "users" as TabName,
+      icon: <Users className="h-5 w-5 mr-2" />,
+    });
+  }
   
   const toggleMobileMenu = () => {
     setShowMobileMenu(!showMobileMenu);
