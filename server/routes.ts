@@ -186,8 +186,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   if (!defaultUser) {
     defaultUser = await storage.createUser({
       username: "admin",
-      email: "admin@example.com",
-      password: "password", // In a real app, this would be hashed
+      email: "tothestars@gmail.com",
+      password: "0944", // This will be hashed by the auth system
       isAdmin: true
     });
   }
