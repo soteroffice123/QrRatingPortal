@@ -1,10 +1,83 @@
-import type { Express } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { z } from "zod";
-import { insertBusinessSchema, insertQrCodeSchema, insertLinkSchema, insertAnalyticSchema } from "@shared/schema";
+import { insertBusinessSchema, insertQrCodeSchema, insertLinkSchema, insertAnalyticSchema, insertUserSchema } from "@shared/schema";
+import { setupAuth } from "./auth";
+
+// Middleware to check if user is admin
+function isAdmin(req: Request, res: Response, next: NextFunction) {
+  if (!req.isAuthenticated()) {
+    return res.status(401).send("Unauthorized - Login required");
+  }
+  
+  if (!req.user.isAdmin) {
+    return res.status(403).send("Forbidden - Admin access required");
+  }
+  
+  next();
+}
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Set up authentication
+  setupAuth(app);
+  
+  // User Management API Routes
+  // Admin only - Get all users
+  app.get("/api/users", isAdmin, async (req, res) => {
+    try {
+      const users = await storage.getAllUsers();
+      res.json(users);
+    } catch (error) {
+      console.error("Error getting users:", error);
+      res.status(500).send("Failed to retrieve users");
+    }
+  });
+  
+  // Admin only - Create new user
+  app.post("/api/users", isAdmin, async (req, res) => {
+    try {
+      const userData = insertUserSchema.parse(req.body);
+      
+      // Check if username or email already exists
+      const existingUserByName = await storage.getUserByUsername(userData.username);
+      if (existingUserByName) {
+        return res.status(400).send("Username already exists");
+      }
+      
+      if (userData.email) {
+        const existingUserByEmail = await storage.getUserByEmail(userData.email);
+        if (existingUserByEmail) {
+          return res.status(400).send("Email already exists");
+        }
+      }
+      
+      const user = await storage.createUser(userData);
+      res.status(201).json(user);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json(error.issues);
+      }
+      console.error("Error creating user:", error);
+      res.status(500).send("Failed to create user");
+    }
+  });
+  
+  // Get user analytics (for authenticated users)
+  app.get("/api/user/analytics", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).send("Authentication required");
+    }
+    
+    try {
+      const userId = req.user.id;
+      const analytics = await storage.getUserAnalyticsSummary(userId);
+      res.json(analytics);
+    } catch (error) {
+      console.error("Error getting user analytics:", error);
+      res.status(500).send("Failed to retrieve user analytics");
+    }
+  });
   // For demo purposes, we'll create a default admin user and sample data
   const defaultUserId = 1;
   let defaultUser = await storage.getUser(defaultUserId);
@@ -13,7 +86,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   if (!defaultUser) {
     defaultUser = await storage.createUser({
       username: "admin",
+      email: "admin@example.com",
       password: "password", // In a real app, this would be hashed
+      isAdmin: true
     });
   }
 

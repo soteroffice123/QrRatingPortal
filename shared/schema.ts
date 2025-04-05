@@ -5,12 +5,16 @@ import { z } from "zod";
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
+  email: text("email").notNull().unique(),
   password: text("password").notNull(),
+  isAdmin: boolean("is_admin").notNull().default(false),
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
+  email: true,
   password: true,
+  isAdmin: true,
 });
 
 export const businesses = pgTable("businesses", {
@@ -59,9 +63,14 @@ export const analytics = pgTable("analytics", {
   id: serial("id").primaryKey(),
   businessId: integer("business_id").notNull().references(() => businesses.id),
   qrCodeId: integer("qr_code_id").notNull().references(() => qrCodes.id),
+  userId: integer("user_id").references(() => users.id),
   scanDate: timestamp("scan_date").notNull().defaultNow(),
   rating: integer("rating"),
   destination: text("destination"),
+  customerEmail: text("customer_email"),
+  customerFeedback: text("customer_feedback"),
+  location: text("location"),
+  deviceType: text("device_type"),
 });
 
 export const insertAnalyticSchema = createInsertSchema(analytics).omit({

@@ -9,7 +9,9 @@ export interface IStorage {
   // User operations
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
+  getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  getAllUsers(): Promise<User[]>;
   
   // Business operations
   getBusiness(id: number): Promise<Business | undefined>;
@@ -32,11 +34,18 @@ export interface IStorage {
   // Analytics operations
   createAnalytic(analytic: InsertAnalytic): Promise<Analytic>;
   getAnalyticsByBusinessId(businessId: number): Promise<Analytic[]>;
+  getAnalyticsByUserId(userId: number): Promise<Analytic[]>;
   getRatingDistribution(businessId: number): Promise<Record<number, number>>;
   getScansOverTime(businessId: number, days: number): Promise<Record<string, number>>;
+  getUserAnalyticsSummary(userId: number): Promise<{
+    totalScans: number;
+    ratingsSubmitted: number;
+    averageRating: number;
+    feedbackCount: number;
+  }>;
   
   // Session store
-  sessionStore: session.SessionStore;
+  sessionStore: any; // Using any to avoid SessionStore type issues
 }
 
 export class MemStorage implements IStorage {
@@ -52,7 +61,7 @@ export class MemStorage implements IStorage {
     link: number;
     analytic: number;
   };
-  sessionStore: session.SessionStore;
+  sessionStore: any; // Using any to avoid SessionStore type issues
 
   constructor() {
     this.usersData = new Map();
@@ -82,10 +91,24 @@ export class MemStorage implements IStorage {
       (user) => user.username === username,
     );
   }
+  
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    return Array.from(this.usersData.values()).find(
+      (user) => user.email === email,
+    );
+  }
+
+  async getAllUsers(): Promise<User[]> {
+    return Array.from(this.usersData.values());
+  }
 
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = this.currentIds.user++;
-    const user: User = { ...insertUser, id };
+    const user: User = { 
+      ...insertUser, 
+      id,
+      isAdmin: insertUser.isAdmin || false
+    };
     this.usersData.set(id, user);
     return user;
   }
@@ -103,7 +126,15 @@ export class MemStorage implements IStorage {
 
   async createBusiness(business: InsertBusiness): Promise<Business> {
     const id = this.currentIds.business++;
-    const newBusiness: Business = { ...business, id };
+    const newBusiness: Business = { 
+      ...business, 
+      id,
+      address: business.address ?? null,
+      description: business.description ?? null,
+      logoUrl: business.logoUrl ?? null,
+      phone: business.phone ?? null,
+      website: business.website ?? null
+    };
     this.businessesData.set(id, newBusiness);
     return newBusiness;
   }
@@ -130,7 +161,15 @@ export class MemStorage implements IStorage {
 
   async createQrCode(qrCode: InsertQrCode): Promise<QrCode> {
     const id = this.currentIds.qrCode++;
-    const newQrCode: QrCode = { ...qrCode, id };
+    const newQrCode: QrCode = { 
+      ...qrCode, 
+      id,
+      size: qrCode.size || 200,
+      fgColor: qrCode.fgColor || "#000000",
+      bgColor: qrCode.bgColor || "#FFFFFF",
+      errorCorrection: qrCode.errorCorrection || "M",
+      logoEnabled: qrCode.logoEnabled || false
+    };
     this.qrCodesData.set(id, newQrCode);
     return newQrCode;
   }
@@ -157,7 +196,12 @@ export class MemStorage implements IStorage {
 
   async createLink(link: InsertLink): Promise<Link> {
     const id = this.currentIds.link++;
-    const newLink: Link = { ...link, id };
+    const newLink: Link = { 
+      ...link, 
+      id,
+      prefillRating: link.prefillRating || false,
+      passRating: link.passRating || false
+    };
     this.linksData.set(id, newLink);
     return newLink;
   }
@@ -177,7 +221,14 @@ export class MemStorage implements IStorage {
     const newAnalytic: Analytic = { 
       ...analytic, 
       id, 
-      scanDate: analytic.scanDate || new Date() 
+      scanDate: analytic.scanDate || new Date(),
+      userId: analytic.userId ?? null,
+      rating: analytic.rating ?? null,
+      destination: analytic.destination ?? null,
+      customerEmail: analytic.customerEmail ?? null,
+      customerFeedback: analytic.customerFeedback ?? null,
+      location: analytic.location ?? null,
+      deviceType: analytic.deviceType ?? null
     };
     this.analyticsData.set(id, newAnalytic);
     return newAnalytic;
@@ -187,6 +238,35 @@ export class MemStorage implements IStorage {
     return Array.from(this.analyticsData.values()).filter(
       (analytic) => analytic.businessId === businessId,
     );
+  }
+  
+  async getAnalyticsByUserId(userId: number): Promise<Analytic[]> {
+    return Array.from(this.analyticsData.values()).filter(
+      (analytic) => analytic.userId === userId,
+    );
+  }
+  
+  async getUserAnalyticsSummary(userId: number): Promise<{
+    totalScans: number;
+    ratingsSubmitted: number;
+    averageRating: number;
+    feedbackCount: number;
+  }> {
+    const userAnalytics = await this.getAnalyticsByUserId(userId);
+    const ratingsWithValues = userAnalytics.filter(a => a.rating !== null && a.rating !== undefined);
+    
+    const totalScans = userAnalytics.length;
+    const ratingsSubmitted = ratingsWithValues.length;
+    const ratingSum = ratingsWithValues.reduce((sum, a) => sum + (a.rating || 0), 0);
+    const averageRating = ratingsSubmitted > 0 ? ratingSum / ratingsSubmitted : 0;
+    const feedbackCount = userAnalytics.filter(a => a.customerFeedback).length;
+    
+    return {
+      totalScans,
+      ratingsSubmitted,
+      averageRating,
+      feedbackCount
+    };
   }
 
   async getRatingDistribution(businessId: number): Promise<Record<number, number>> {
