@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { useLocation } from "wouter";
 import { 
   LayoutDashboard, 
   Briefcase, 
@@ -12,48 +11,52 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
+export type TabName = "dashboard" | "business" | "qrcode" | "links" | "analytics";
+
 interface SidebarNavProps {
   onLogout: () => void;
+  activeTab: TabName;
+  setActiveTab: (tab: TabName) => void;
 }
 
-export function SidebarNav({ onLogout }: SidebarNavProps) {
-  const [location] = useLocation();
+export function SidebarNav({ onLogout, activeTab, setActiveTab }: SidebarNavProps) {
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   
   const tabs = [
     {
       name: "Dashboard",
-      hash: "dashboard",
+      id: "dashboard" as TabName,
       icon: <LayoutDashboard className="h-5 w-5 mr-2" />,
     },
     {
       name: "Business Info",
-      hash: "business",
+      id: "business" as TabName,
       icon: <Briefcase className="h-5 w-5 mr-2" />,
     },
     {
       name: "QR Code",
-      hash: "qrcode",
+      id: "qrcode" as TabName,
       icon: <QrCode className="h-5 w-5 mr-2" />,
     },
     {
       name: "Links",
-      hash: "links",
+      id: "links" as TabName,
       icon: <Link className="h-5 w-5 mr-2" />,
     },
     {
       name: "Analytics",
-      hash: "analytics",
+      id: "analytics" as TabName,
       icon: <ChartBar className="h-5 w-5 mr-2" />,
     },
   ];
   
-  const activeTab = location.includes("#") 
-    ? location.split("#")[1] 
-    : "dashboard";
-  
   const toggleMobileMenu = () => {
     setShowMobileMenu(!showMobileMenu);
+  };
+
+  const handleTabClick = (tab: TabName) => {
+    setActiveTab(tab);
+    setShowMobileMenu(false);
   };
 
   return (
@@ -75,18 +78,17 @@ export function SidebarNav({ onLogout }: SidebarNavProps) {
       )}>
         <ul className="space-y-1">
           {tabs.map((tab) => (
-            <li key={tab.hash}>
-              <a 
-                href={`#${tab.hash}`}
+            <li key={tab.id}>
+              <button 
                 className={cn(
-                  "flex items-center px-4 py-2 text-gray-100 hover:bg-gray-700",
-                  activeTab === tab.hash ? "bg-gray-700" : ""
+                  "flex items-center px-4 py-2 text-gray-100 hover:bg-gray-700 w-full text-left",
+                  activeTab === tab.id ? "bg-gray-700" : ""
                 )}
-                onClick={() => setShowMobileMenu(false)}
+                onClick={() => handleTabClick(tab.id)}
               >
                 {tab.icon}
                 {tab.name}
-              </a>
+              </button>
             </li>
           ))}
         </ul>

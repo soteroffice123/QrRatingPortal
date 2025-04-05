@@ -1,51 +1,63 @@
-import { useEffect, useState } from "react";
-import { useLocation } from "wouter";
-import AdminLayout from "./layout";
+import { useState } from "react";
 import Dashboard from "./dashboard";
 import BusinessInfo from "./business-info";
 import QrCode from "./qr-code";
 import Links from "./links";
 import Analytics from "./analytics";
-
-type TabName = "dashboard" | "business" | "qrcode" | "links" | "analytics";
+import { SidebarNav, TabName } from "@/components/sidebar-nav";
+import { AnimatePresence, motion } from "framer-motion";
 
 export default function AdminDashboard() {
-  const [location] = useLocation();
   const [activeTab, setActiveTab] = useState<TabName>("dashboard");
   
-  // Extract tab from URL hash if present
-  useEffect(() => {
-    const hash = window.location.hash.replace("#", "");
-    if (hash && ["dashboard", "business", "qrcode", "links", "analytics"].includes(hash)) {
-      setActiveTab(hash as TabName);
-    }
-  }, [location]);
-  
-  // Update URL hash when tab changes
-  useEffect(() => {
-    window.location.hash = activeTab;
-  }, [activeTab]);
+  // No logout functionality yet, so provide an empty function
+  const handleLogout = () => {
+    // This function now does nothing
+  };
 
   const renderTabContent = () => {
-    switch (activeTab) {
-      case "dashboard":
-        return <Dashboard />;
-      case "business":
-        return <BusinessInfo />;
-      case "qrcode":
-        return <QrCode />;
-      case "links":
-        return <Links />;
-      case "analytics":
-        return <Analytics />;
-      default:
-        return <Dashboard />;
-    }
+    return (
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={activeTab}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -10 }}
+          transition={{ duration: 0.2 }}
+          className="w-full"
+        >
+          {(() => {
+            switch (activeTab) {
+              case "dashboard":
+                return <Dashboard />;
+              case "business":
+                return <BusinessInfo />;
+              case "qrcode":
+                return <QrCode />;
+              case "links":
+                return <Links />;
+              case "analytics":
+                return <Analytics />;
+              default:
+                return <Dashboard />;
+            }
+          })()}
+        </motion.div>
+      </AnimatePresence>
+    );
   };
 
   return (
-    <AdminLayout>
-      {renderTabContent()}
-    </AdminLayout>
+    <div className="min-h-screen flex flex-col md:flex-row">
+      <SidebarNav 
+        activeTab={activeTab} 
+        setActiveTab={setActiveTab} 
+        onLogout={handleLogout} 
+      />
+      
+      <main className="flex-1 p-4 md:p-6 overflow-auto">
+        {renderTabContent()}
+      </main>
+    </div>
   );
 }
