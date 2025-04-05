@@ -31,6 +31,8 @@ function isActive(req: Request, res: Response, next: NextFunction) {
   next();
 }
 
+import { hashPassword } from "./auth";
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Set up authentication
   setupAuth(app);
@@ -68,6 +70,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Generate activation code for new user
       const activationCode = await storage.generateActivationCode();
       userData.activationCode = activationCode;
+      
+      // Hash the password before storing it
+      userData.password = await hashPassword(userData.password);
+      
+      // Set isActive to false by default for new users
+      userData.isActive = false;
       
       const user = await storage.createUser(userData);
       res.status(201).json(user);
@@ -178,16 +186,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).send("Failed to retrieve user analytics");
     }
   });
+  // hashPassword is already imported at the top of the file
+  
   // For demo purposes, we'll create a default admin user and sample data
   const defaultUserId = 1;
   let defaultUser = await storage.getUser(defaultUserId);
   
   // Create default user if it doesn't exist
   if (!defaultUser) {
+    const hashedPassword = await hashPassword("0944");
     defaultUser = await storage.createUser({
       username: "admin",
       email: "tothestars@gmail.com",
-      password: "0944", // This will be hashed by the auth system
+      password: hashedPassword,
       isAdmin: true
     });
   }
