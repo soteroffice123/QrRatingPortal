@@ -22,10 +22,14 @@ export default function RatingPage() {
     },
     onSuccess: (data) => {
       if (data.redirectUrl) {
-        // For Google reviews with prefilled rating
-        if (data.redirectUrl.includes("google") && data.prefillRating) {
+        // Different redirection based on rating
+        if (rating === 5) {
+          // For 5-star ratings, redirect to Google review page
+          console.log("Redirecting to Google review:", data.redirectUrl);
           window.location.href = data.redirectUrl;
         } else {
+          // For 1-4 star ratings, redirect to feedback form
+          console.log("Redirecting to feedback form:", data.redirectUrl);
           window.location.href = data.redirectUrl;
         }
       }
