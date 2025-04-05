@@ -86,32 +86,10 @@ export function setupAuth(app: Express) {
     }
   });
 
-  app.post("/api/register", async (req, res, next) => {
-    try {
-      // Check if username already exists
-      const existingUsername = await storage.getUserByUsername(req.body.username);
-      if (existingUsername) {
-        return res.status(400).send("Username already exists");
-      }
-      
-      // Check if email already exists
-      const existingEmail = await storage.getUserByEmail(req.body.email);
-      if (existingEmail) {
-        return res.status(400).send("Email already exists");
-      }
-
-      const user = await storage.createUser({
-        ...req.body,
-        password: await hashPassword(req.body.password),
-      });
-
-      req.login(user, (err) => {
-        if (err) return next(err);
-        res.status(201).json(user);
-      });
-    } catch (err) {
-      next(err);
-    }
+  // Register endpoint is now disabled for public use
+  // Users can only be created by admins through the admin panel
+  app.post("/api/register", (req, res) => {
+    res.status(403).send("Registration is disabled. Please contact an administrator to create an account.");
   });
 
   app.post("/api/login", passport.authenticate("local"), (req, res) => {
