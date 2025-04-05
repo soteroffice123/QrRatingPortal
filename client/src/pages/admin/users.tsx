@@ -48,7 +48,9 @@ import { User as UserType } from "@shared/schema";
 const newUserSchema = z.object({
   username: z.string().min(3, "Username must be at least 3 characters"),
   email: z.string().email("Please enter a valid email address"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
+  password: z.string()
+    .length(4, { message: "PIN must be exactly 4 digits" })
+    .regex(/^\d{4}$/, { message: "PIN must contain only 4 digits" }),
   isAdmin: z.boolean().default(false),
 });
 
@@ -301,9 +303,15 @@ export default function Users() {
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Password</FormLabel>
+                    <FormLabel>PIN (4 digits)</FormLabel>
                     <FormControl>
-                      <Input type="password" placeholder="******" {...field} />
+                      <Input 
+                        type="password" 
+                        placeholder="4-digit PIN" 
+                        inputMode="numeric"
+                        maxLength={4}
+                        {...field} 
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

@@ -13,7 +13,9 @@ import { Link } from "wouter";
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address" }),
-  password: z.string().min(6, { message: "Password must be at least 6 characters" }),
+  password: z.string()
+    .length(4, { message: "PIN must be exactly 4 digits" })
+    .regex(/^\d{4}$/, { message: "PIN must contain only 4 digits" }),
 });
 
 type LoginFormValues = z.infer<typeof loginSchema>;
@@ -95,7 +97,7 @@ export default function AuthPage() {
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Password</FormLabel>
+                    <FormLabel>PIN (4 digits)</FormLabel>
                     <FormControl>
                       <div className="flex items-center border rounded-md focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 ring-offset-background">
                         <span className="pl-3">
@@ -103,7 +105,9 @@ export default function AuthPage() {
                         </span>
                         <Input 
                           type="password" 
-                          placeholder="••••••••" 
+                          placeholder="4-digit PIN"
+                          inputMode="numeric"
+                          maxLength={4}
                           className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0"
                           {...field} 
                         />
